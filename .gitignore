@@ -1,0 +1,21 @@
+@"
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+*.db
+
+# Secrets & Environment
+.env
+.env.*
+
+# Security Scan Reports (temporary)
+*-report.json
+*.sarif
+
+# IDE / OS
+.vscode/
+.DS_Store
+Thumbs.db
+"@ | Set-Content -Path .gitignore -Encoding utf8
