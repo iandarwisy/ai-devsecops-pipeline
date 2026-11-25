@@ -1,0 +1,169 @@
+name: DevSecOps Security Fail Gates
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Boleh jalankan manual masa demo FYP
+
+# Zero Trust / Least Privilege: Secara default, semua job cuma dapat akses baca sahaja
+permissions:
+  contents: read
+
+jobs:
+  # ==========================================================
+  # GATE 2: AUTOMATED REGRESSION & UNIT TESTS (PYTEST)
+  # ==========================================================
+  unit-tests:
+    name: "Gate 2: Unit Tests (Pytest)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r app/requirements.txt
+
+      - name: Run Pytest suite
+        run: python -m pytest -v
+
+  # ==========================================================
+  # GATE 6 (CLOUD): SECRET SCANNING (GITLEAKS CI)
+  # ==========================================================
+  secret-scan-ci:
+    name: "Gate 6: Secret Scan (Gitleaks CI)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full Git history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Gitleaks CLI
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.21.2/gitleaks_8.21.2_linux_x64.tar.gz -o gitleaks.tar.gz
+          tar -xzf gitleaks.tar.gz gitleaks
+          sudo mv gitleaks /usr/local/bin/
+          rm gitleaks.tar.gz
+
+      - name: Scan repository for leaked secrets
+        run: gitleaks detect --source . --redact --verbose
+
+  # ==========================================================
+  # GATE 3: SAST SCAN (SEMGREP - OWASP TOP 10)
+  # ==========================================================
+  sast-semgrep:
+    name: "Gate 3: SAST (Semgrep OWASP)"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Semgrep
+        run: pip install semgrep
+
+      - name: Run Semgrep SAST & export JSON for AI Agent
+        run: |
+          semgrep scan \
+            --config p/python \
+            --config p/flask \
+            --config p/owasp-top-ten \
+            --json-output=semgrep-report.json \
+            --error \
+            app/
+
+      - name: Upload Semgrep JSON report (for Phase 4 AI Remediation)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: semgrep-report.json
+          if-no-files-found: warn
+
+  # ==========================================================
+  # GATE 4: DEEP SAST (GITHUB CODEQL)
+  # ==========================================================
+  sast-codeql:
+    name: "Gate 4: Deep SAST (CodeQL)"
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: security-extended
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  # ==========================================================
+  # GATE 5: CONTAINER, CVE & SBOM SCAN (TRIVY)
+  # ==========================================================
+  container-trivy:
+    name: "Gate 5: Container & CVE Scan (Trivy)"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build hardened Docker image
+        run: docker build -t devsecops-portal:ci .
+
+      - name: Generate CycloneDX SBOM
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: "devsecops-portal:ci"
+          format: "cyclonedx"
+          output: "sbom.cdx.json"
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: container-sbom
+          path: sbom.cdx.json
+
+      - name: Scan image & generate SARIF for GitHub Security tab
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: "devsecops-portal:ci"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+
+      - name: Upload Trivy SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Enforce Container Fail Gate (Block HIGH/CRITICAL CVEs)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: "devsecops-portal:ci"
+          format: "table"
+          exit-code: "1"
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
