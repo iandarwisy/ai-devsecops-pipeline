@@ -14,6 +14,7 @@ from groq import Groq
 
 DEFAULT_MODEL = os.environ.get("GROQ_MODEL", "openai/gpt-oss-120b")
 MAX_FINDINGS = 8
+GITHUB_API_BASE = "https://" + "api.github.com"
 
 SYSTEM_PROMPT = """You are a senior Application Security Engineer performing automated SAST remediation in a DevSecOps CI/CD pipeline.
 
@@ -95,7 +96,7 @@ def request_ai_fix(
     response = client.chat.completions.create(
         model=model,
         temperature=0.1,
-        max_tokens=1024,
+        max_tokens=4096,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -116,7 +117,7 @@ def load_semgrep_findings(report_path: Path) -> list[dict[str, Any]]:
     results = raw.get("results", [])
 
     findings: list[dict[str, Any]] = []
-    seen: set[tuple[str, int, int, str]] = set()
+    seen: set[tuple[str, int, int]] = set()
 
     for item in results:
         path = item.get("path", "").replace("\\", "/")
@@ -124,7 +125,7 @@ def load_semgrep_findings(report_path: Path) -> list[dict[str, Any]]:
         end_line = int(item.get("end", {}).get("line", start_line))
         rule_id = item.get("check_id", "unknown-rule")
 
-        key = (path, start_line, end_line, rule_id)
+        key = (path, start_line, end_line)
         if key in seen:
             continue
         seen.add(key)
@@ -159,7 +160,7 @@ def get_pr_diff_lines(
     repo: str, pr_number: str, token: str
 ) -> dict[str, set[int]]:
     """Fetch changed line numbers per file in the PR so inline suggestions never fail."""
-    url = f"[https://api.github.com/repos/](https://api.github.com/repos/){repo}/pulls/{pr_number}/files"
+    url = f"{GITHUB_API_BASE}/repos/{repo}/pulls/{pr_number}/files"
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/vnd.github+json",
@@ -297,7 +298,7 @@ def post_to_github_pr(
                 review_comments.append(comment_obj)
 
         if review_comments:
-            review_url = f"[https://api.github.com/repos/](https://api.github.com/repos/){repo}/pulls/{pr_number}/reviews"
+            review_url = f"{GITHUB_API_BASE}/repos/{repo}/pulls/{pr_number}/reviews"
             payload = {
                 "event": "COMMENT",
                 "body": "AI Security Gate found SAST vulnerabilities and prepared 1-click code remediation suggestions below.",
@@ -312,7 +313,7 @@ def post_to_github_pr(
         print(f"[WARN] Could not post inline PR review (falling back to summary comment): {exc}")
 
     # 2. Always post consolidated Markdown summary comment on the PR
-    comment_url = f"[https://api.github.com/repos/](https://api.github.com/repos/){repo}/issues/{pr_number}/comments"
+    comment_url = f"{GITHUB_API_BASE}/repos/{repo}/issues/{pr_number}/comments"
     resp = requests.post(comment_url, headers=headers, json={"body": summary_md}, timeout=20)
     if resp.ok:
         print(f"[OK] Posted AI Remediation summary comment to PR #{pr_number}.")
