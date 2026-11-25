@@ -57,10 +57,10 @@ jobs:
         run: gitleaks detect --source . --redact --verbose
 
   # ==========================================================
-  # GATE 3: SAST SCAN (SEMGREP - OWASP TOP 10)
+  # GATE 3A: SAST SCAN (SEMGREP - OWASP TOP 10)
   # ==========================================================
   sast-semgrep:
-    name: "Gate 3: SAST (Semgrep OWASP)"
+    name: "Gate 3A: SAST (Semgrep OWASP)"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -93,10 +93,10 @@ jobs:
           if-no-files-found: warn
 
   # ==========================================================
-  # GATE 4: DEEP SAST (GITHUB CODEQL)
+  # GATE 3B: DEEP SAST (GITHUB CODEQL)
   # ==========================================================
   sast-codeql:
-    name: "Gate 4: Deep SAST (CodeQL)"
+    name: "Gate 3B: Deep SAST (CodeQL)"
     runs-on: ubuntu-latest
     permissions:
       actions: read
@@ -167,3 +167,52 @@ jobs:
           exit-code: "1"
           severity: "CRITICAL,HIGH"
           ignore-unfixed: true
+
+  # ==========================================================
+  # GATE 4: AI AUTO-REMEDIATION AGENT (GROQ LLM)
+  # ==========================================================
+  ai-remediation:
+    name: "Gate 4: AI Auto-Remediation (Groq)"
+    needs: [sast-semgrep]
+    # Jalan hanya apabila Semgrep mengesan kerentanan pada PR daripada repo sendiri
+    if: >-
+      always() &&
+      github.event_name == 'pull_request' &&
+      needs.sast-semgrep.result == 'failure' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout PR branch code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Download Semgrep JSON report
+        uses: actions/download-artifact@v4
+        with:
+          name: semgrep-report
+
+      - name: Install AI Remediation dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run Groq AI Remediation Agent & post PR suggestions
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python scripts/ai_remediator.py --report semgrep-report.json
+
+      - name: Upload AI Remediation Markdown report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-remediation-report
+          path: ai-remediation-report.md
+          if-no-files-found: warn
