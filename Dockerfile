@@ -7,14 +7,17 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /srv/app
 
-# Pasang library dahulu untuk caching lebih laju
-COPY app/requirements.txt ./app/requirements.txt
-RUN pip install --no-cache-dir -r app/requirements.txt
+RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
 
-# Salin kod aplikasi
+COPY app/requirements.txt ./app/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r app/requirements.txt \
+    && pip uninstall -y setuptools wheel jaraco.context
+
 COPY app/ ./app/
 
-# Hardening: Cipta dan tukar ke pengguna non-root (Zero Trust / Least Privilege)
 RUN adduser --disabled-password --gecos "" appuser \
     && chown -R appuser:appuser /srv/app
 
