@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -14,8 +14,9 @@ RUN apt-get update \
 COPY app/requirements.txt ./app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r app/requirements.txt \
-    && pip uninstall -y setuptools wheel jaraco.context \
-    && rm -rf /usr/local/lib/python3.11/ensurepip
+    && pip uninstall -y setuptools wheel jaraco.context || true \
+    && rm -rf /usr/local/lib/python3.12/ensurepip \
+    && find /usr/local/lib /usr/lib -iname "*setuptools*" -exec rm -rf {} +
 
 COPY app/ ./app/
 
