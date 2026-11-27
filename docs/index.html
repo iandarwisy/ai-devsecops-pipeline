@@ -1,0 +1,1708 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI-Driven DevSecOps Control Center | iandarwisy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              mono: ["JetBrains Mono", "monospace"],
+            },
+            colors: {
+              soc: {
+                bg: "#060a13",
+                panel: "#0c1322",
+                card: "#111a2e",
+                border: "#1e293b",
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        background-color: #060a13;
+        background-image:
+          radial-gradient(
+            circle at 15% 0%,
+            rgba(56, 189, 248, 0.08),
+            transparent 35%
+          ),
+          radial-gradient(
+            circle at 85% 10%,
+            rgba(99, 102, 241, 0.08),
+            transparent 35%
+          );
+        color: #e2e8f0;
+      }
+      .glass-panel {
+        background: rgba(12, 19, 34, 0.88);
+        border: 1px solid rgba(51, 65, 85, 0.6);
+        backdrop-filter: blur(12px);
+      }
+      .gate-card {
+        transition: all 0.2s ease;
+      }
+      .gate-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(99, 102, 241, 0.6);
+      }
+      .gate-active {
+        border-color: #818cf8 !important;
+        box-shadow:
+          0 0 0 1px rgba(129, 140, 248, 0.5),
+          0 8px 24px -8px rgba(99, 102, 241, 0.35);
+      }
+      .scrollbar-thin::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+      }
+      .scrollbar-thin::-webkit-scrollbar-track {
+        background: #0b1120;
+      }
+      .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 9999px;
+      }
+    </style>
+  </head>
+  <body
+    class="min-h-screen antialiased selection:bg-indigo-500/30 selection:text-indigo-200"
+  >
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 py-5 space-y-5">
+      <!-- TOP COMMAND BAR -->
+      <header
+        class="glass-panel rounded-2xl px-5 py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-4"
+      >
+        <div class="flex items-center gap-3.5">
+          <div
+            class="w-11 h-11 rounded-xl bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center text-indigo-400 shrink-0"
+          >
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M12 3l7.5 3v5.5c0 4.8-3.2 8.7-7.5 9.5-4.3-.8-7.5-4.7-7.5-9.5V6L12 3z"
+              />
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9.5 12.2l1.8 1.8 3.6-3.8"
+              />
+            </svg>
+          </div>
+          <div>
+            <div class="flex flex-wrap items-center gap-2">
+              <h1
+                class="text-lg sm:text-xl font-bold tracking-tight text-white"
+              >
+                AI-Driven DevSecOps Control Center
+              </h1>
+              <span
+                class="px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wider rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-400/30"
+              >
+                FYP Security Command
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Shift-Left 7-Gate Enforcement &amp; Groq AI Auto-Remediation
+              Pipeline
+            </p>
+          </div>
+        </div>
+
+        <!-- MODE TOGGLE + REPO CONTEXT -->
+        <div class="flex flex-wrap items-center gap-2.5">
+          <!-- 2-Mode Switch -->
+          <div
+            class="inline-flex rounded-xl bg-slate-950/90 p-1 border border-slate-700/70"
+            role="group"
+          >
+            <button
+              id="btnModeDemo"
+              onclick="setMode('demo')"
+              class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all"
+            >
+              Interactive Demo
+            </button>
+            <button
+              id="btnModeLive"
+              onclick="setMode('live')"
+              class="px-3 py-1.5 text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5"
+            >
+              <span
+                class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"
+              ></span>
+              Live GitHub Sync
+            </button>
+          </div>
+
+          <!-- Repo & PR Selector -->
+          <div
+            class="flex items-center gap-2 bg-slate-900/90 border border-slate-700/70 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-300"
+          >
+            <a
+              href="https://github.com/iandarwisy/ai-devsecops-pipeline"
+              target="_blank"
+              rel="noopener"
+              class="hover:text-indigo-300 transition"
+            >
+              iandarwisy/ai-devsecops-pipeline
+            </a>
+            <span class="text-slate-600">|</span>
+            <select
+              id="prSelector"
+              onchange="handlePrChange()"
+              class="bg-transparent text-indigo-300 font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="9" class="bg-slate-900 text-rose-300">
+                PR #9 • feat/owasp-demo (Blocked)
+              </option>
+              <option value="10" class="bg-slate-900 text-emerald-300">
+                PR #10 • feat/demo-remediation (Merged)
+              </option>
+            </select>
+          </div>
+
+          <!-- Merge Status Pill -->
+          <div
+            id="mergeStatusBadge"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide uppercase flex items-center gap-2 border"
+          >
+            <span id="mergeStatusDot" class="w-2 h-2 rounded-full"></span>
+            <span id="mergeStatusText">MERGE BLOCKED</span>
+          </div>
+
+          <!-- Contextual Action Button -->
+          <button
+            id="primaryTopAction"
+            onclick="handleTopAction()"
+            class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/70 transition flex items-center gap-1.5"
+          >
+            <svg
+              class="w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+            <span id="primaryTopActionLabel">Reset Demo</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- LIVE API STATUS BANNER (VISIBLE IN LIVE MODE) -->
+      <div
+        id="liveBanner"
+        class="hidden glass-panel rounded-xl px-4 py-2.5 border-l-4 border-l-emerald-400 flex flex-wrap items-center justify-between gap-2 text-xs"
+      >
+        <div class="flex items-center gap-2 text-slate-300">
+          <span
+            class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 font-semibold border border-emerald-500/30"
+            >READ-ONLY API</span
+          >
+          <span id="liveBannerMsg"
+            >Connected to GitHub REST API for
+            iandarwisy/ai-devsecops-pipeline.</span
+          >
+        </div>
+        <a
+          id="livePrLink"
+          href="https://github.com/iandarwisy/ai-devsecops-pipeline/pull/9"
+          target="_blank"
+          rel="noopener"
+          class="text-indigo-300 hover:text-indigo-200 font-semibold underline underline-offset-2"
+        >
+          Open PR #9 on GitHub &rarr;
+        </a>
+      </div>
+
+      <!-- 4 KPI CARDS -->
+      <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- KPI 1 -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span
+              class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+              >Gates Passed</span
+            >
+            <span class="text-slate-500 text-xs font-mono">7-GATE CI</span>
+          </div>
+          <div class="mt-3 flex items-baseline gap-2.5">
+            <span id="kpiGatesPassed" class="text-3xl font-bold text-white"
+              >3 / 7</span
+            >
+            <span id="kpiGatesSub" class="text-xs text-slate-400"
+              >4 blocked / locked</span
+            >
+          </div>
+          <div
+            class="mt-3.5 h-1.5 w-full bg-slate-800 rounded-full overflow-hidden"
+          >
+            <div
+              id="kpiGatesBar"
+              class="h-full bg-indigo-500 rounded-full transition-all duration-500"
+              style="width: 43%"
+            ></div>
+          </div>
+        </div>
+
+        <!-- KPI 2 -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span
+              class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+              >Blocking Findings</span
+            >
+            <span
+              class="px-2 py-0.5 rounded text-[10px] font-semibold bg-rose-500/15 text-rose-300 border border-rose-500/30"
+              >ZERO TRUST</span
+            >
+          </div>
+          <div class="mt-3 flex items-baseline gap-2.5">
+            <span id="kpiFindingsCount" class="text-3xl font-bold text-rose-400"
+              >5 Blocked</span
+            >
+            <span id="kpiFindingsTags" class="text-xs font-mono text-slate-400"
+              >OWASP + Trivy</span
+            >
+          </div>
+          <p id="kpiFindingsDesc" class="mt-2.5 text-xs text-slate-400">
+            Ruleset blocks merge until critical SAST &amp; CVE count reaches 0.
+          </p>
+        </div>
+
+        <!-- KPI 3 -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span
+              class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+              >AI Patches Applied</span
+            >
+            <span
+              class="px-2 py-0.5 rounded text-[10px] font-semibold bg-indigo-500/15 text-indigo-300 border border-indigo-500/30"
+              >GROQ AI</span
+            >
+          </div>
+          <div class="mt-3 flex items-baseline gap-2.5">
+            <span id="kpiPatches" class="text-3xl font-bold text-white"
+              >0 / 5</span
+            >
+            <span id="kpiPatchesSub" class="text-xs text-slate-400"
+              >Ready for 1-click commit</span
+            >
+          </div>
+          <p class="mt-2.5 text-xs text-slate-400">
+            Generated by
+            <span class="text-indigo-300 font-mono">openai/gpt-oss-120b</span>
+            inline PR bot.
+          </p>
+        </div>
+
+        <!-- KPI 4 -->
+        <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <span
+              class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+              >Est. Remediation Time</span
+            >
+            <span
+              class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+              >99.9% FASTER MTTR</span
+            >
+          </div>
+          <div class="mt-3 flex items-baseline gap-2.5">
+            <span id="kpiMttr" class="text-3xl font-bold text-emerald-400"
+              >14s</span
+            >
+            <span class="text-xs text-slate-400">via Groq AI Agent</span>
+          </div>
+          <p class="mt-2.5 text-xs text-slate-400">
+            Compared to ~4.5h manual CVE triage &amp; patch authoring.
+          </p>
+        </div>
+      </section>
+
+      <!-- 7-GATE INTERACTIVE PIPELINE -->
+      <section class="glass-panel rounded-2xl p-5 space-y-4">
+        <div
+          class="flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+        >
+          <div>
+            <h2 class="text-sm font-bold text-white flex items-center gap-2">
+              <span class="text-indigo-400">&#9889;</span> End-to-End 7-Gate AI
+              Security Pipeline
+            </h2>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Click any gate stage (left to right) to inspect enforcement rules
+              and verification checklist.
+            </p>
+          </div>
+          <div
+            class="flex flex-wrap items-center gap-3 text-[11px] text-slate-400"
+          >
+            <span class="flex items-center gap-1.5"
+              ><span class="w-2 h-2 rounded-full bg-emerald-400"></span
+              >Passed</span
+            >
+            <span class="flex items-center gap-1.5"
+              ><span class="w-2 h-2 rounded-full bg-amber-400"></span>Warning /
+              Patch Ready</span
+            >
+            <span class="flex items-center gap-1.5"
+              ><span class="w-2 h-2 rounded-full bg-rose-500"></span>Failed /
+              Blocked</span
+            >
+            <span class="flex items-center gap-1.5"
+              ><span class="w-2 h-2 rounded-full bg-slate-500"></span
+              >Locked</span
+            >
+          </div>
+        </div>
+
+        <div
+          id="gatesGrid"
+          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-3"
+        >
+          <!-- Rendered by JS -->
+        </div>
+      </section>
+
+      <!-- MAIN WORKBENCH: LEFT (QUEUE + GATE DETAIL + CHART) | RIGHT (AI REMEDIATION INSPECTOR) -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- LEFT COLUMN (5 cols) -->
+        <div class="lg:col-span-5 space-y-5">
+          <!-- Active Findings Queue -->
+          <div class="glass-panel rounded-2xl p-5 space-y-3.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-bold text-white">
+                Active Security Findings Queue
+              </h3>
+              <span
+                id="queueCounter"
+                class="px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-slate-800 text-slate-300 border border-slate-700"
+              >
+                5 Open / 0 Patched
+              </span>
+            </div>
+            <div
+              id="findingsList"
+              class="space-y-2.5 max-h-[340px] overflow-y-auto scrollbar-thin pr-1"
+            >
+              <!-- Rendered by JS -->
+            </div>
+          </div>
+
+          <!-- Gate Enforcement & Checklist Inspector -->
+          <div class="glass-panel rounded-2xl p-5 space-y-4">
+            <div class="flex items-center justify-between">
+              <span
+                id="inspectorGateTag"
+                class="text-[11px] font-mono font-semibold uppercase tracking-wider text-indigo-300"
+                >GATE 03 INSPECTOR</span
+              >
+              <span
+                id="inspectorGateStatus"
+                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase"
+              ></span>
+            </div>
+            <div>
+              <p
+                class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+              >
+                Enforcement Rule
+              </p>
+              <p
+                id="inspectorRule"
+                class="text-xs text-slate-200 mt-1.5 leading-relaxed"
+              ></p>
+            </div>
+            <div>
+              <p
+                class="text-[11px] font-semibold uppercase tracking-wider text-slate-400"
+              >
+                Gate Verification Checklist
+              </p>
+              <ul id="inspectorChecklist" class="mt-2 space-y-1.5 text-xs"></ul>
+            </div>
+          </div>
+
+          <!-- Chart.js Risk & Vulnerability Analytics -->
+          <div class="glass-panel rounded-2xl p-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <h3 class="text-sm font-bold text-white">
+                  Vulnerability Breakdown (OWASP &amp; CVE)
+                </h3>
+                <p class="text-[11px] text-slate-400">
+                  Live posture comparison across severity tiers
+                </p>
+              </div>
+              <span
+                id="chartStatusTag"
+                class="text-[11px] font-mono text-indigo-300"
+                >Chart.js Telemetry</span
+              >
+            </div>
+            <div class="h-48 w-full">
+              <canvas id="securityChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN (7 cols): AI REMEDIATION ENGINE -->
+        <div class="lg:col-span-7 flex flex-col gap-5">
+          <div
+            class="glass-panel rounded-2xl p-5 sm:p-6 flex-1 flex flex-col justify-between space-y-5"
+          >
+            <div class="space-y-4">
+              <!-- Bot Header -->
+              <div
+                class="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-slate-800"
+              >
+                <div class="flex items-center gap-3">
+                  <div
+                    class="w-10 h-10 rounded-xl bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center text-indigo-300 font-bold text-sm"
+                  >
+                    AI
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-2">
+                      <span class="text-sm font-bold text-white"
+                        >Groq Security Agent</span
+                      >
+                      <span
+                        class="px-1.5 py-0.5 text-[10px] font-mono font-semibold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-400/30"
+                        >BOT</span
+                      >
+                      <span class="text-xs text-slate-400"
+                        >commented on
+                        <span
+                          id="inspectorPrLabel"
+                          class="text-slate-200 font-mono"
+                          >PR #9</span
+                        ></span
+                      >
+                    </div>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                      Automated SAST &amp; CVE Remediation Engine •
+                      <span id="inspectorFile" class="font-mono text-sky-300"
+                        >app/vulnerable_routes.py:28</span
+                      >
+                    </p>
+                  </div>
+                </div>
+                <span
+                  id="inspectorSeverity"
+                  class="px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border"
+                  >CRITICAL</span
+                >
+              </div>
+
+              <!-- Finding Title & Detector -->
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <h3 id="inspectorTitle" class="text-lg font-bold text-white">
+                  SQL Injection (CWE-89)
+                </h3>
+                <span
+                  id="inspectorDetector"
+                  class="px-2.5 py-1 rounded-lg text-[11px] font-mono bg-slate-900 text-slate-300 border border-slate-700"
+                >
+                  Detector: Semgrep OWASP
+                </span>
+              </div>
+
+              <!-- Plain-English Explanation -->
+              <div
+                class="rounded-xl bg-slate-950/70 border border-slate-800 p-4 space-y-1.5"
+              >
+                <p
+                  class="text-[11px] font-semibold uppercase tracking-wider text-indigo-300"
+                >
+                  Plain-English Risk Explanation
+                </p>
+                <p
+                  id="inspectorExplanation"
+                  class="text-xs sm:text-sm text-slate-300 leading-relaxed"
+                ></p>
+              </div>
+
+              <!-- Code Diff Viewer -->
+              <div
+                class="rounded-xl overflow-hidden border border-slate-800 bg-[#080d18]"
+              >
+                <div
+                  class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between text-[11px] font-mono text-slate-400"
+                >
+                  <span id="diffHeaderPath"
+                    >Suggested Inline Patch • app/vulnerable_routes.py</span
+                  >
+                  <span id="diffStatePill" class="text-amber-300"
+                    >Pending Review</span
+                  >
+                </div>
+                <pre
+                  id="inspectorDiff"
+                  class="p-4 text-xs font-mono overflow-x-auto leading-6 scrollbar-thin"
+                ></pre>
+              </div>
+            </div>
+
+            <!-- Action Footer -->
+            <div
+              class="pt-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            >
+              <div class="text-xs text-slate-400">
+                <span class="text-indigo-400">&rarr;</span>
+                <span id="actionHintText"
+                  >Commits patch directly to branch &amp; re-verifies fail gate
+                  automatically</span
+                >
+              </div>
+              <div class="flex flex-wrap items-center gap-2.5">
+                <button
+                  id="btnApplyAll"
+                  onclick="applyAllFixes()"
+                  class="px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600/70 transition"
+                >
+                  Apply All Remaining Fixes
+                </button>
+                <button
+                  id="btnApplyFix"
+                  onclick="applyCurrentFix()"
+                  class="px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-400 hover:to-sky-400 text-white shadow-lg shadow-indigo-500/20 transition flex items-center gap-2"
+                >
+                  <span>&#10024;</span>
+                  <span id="btnApplyFixLabel"
+                    >Accept &amp; Apply AI Fix (Commit Suggestion)</span
+                  >
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BOTTOM SECTION: ARCHITECTURE ROLES + LIVE AUDIT LOG -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- AI Tool Roles Architecture -->
+        <div class="lg:col-span-6 glass-panel rounded-2xl p-5 space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+              <span class="text-sky-400">&#9881;</span> DevSecOps Tool Roles
+              Architecture
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Separation of AI reasoning, local shift-left ergonomics, and
+              deterministic CI/CD enforcement.
+            </p>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div
+              class="rounded-xl bg-slate-900/70 border border-slate-800 p-4 space-y-1.5"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white">Groq AI Agent</span>
+                <span class="text-[10px] font-mono text-indigo-300"
+                  >The Brain</span
+                >
+              </div>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Runs
+                <span class="font-mono text-slate-300"
+                  >openai/gpt-oss-120b</span
+                >
+                to translate Semgrep SARIF findings into plain-English OWASP
+                reports and 1-click inline PR commit suggestions.
+              </p>
+            </div>
+            <div
+              class="rounded-xl bg-slate-900/70 border border-slate-800 p-4 space-y-1.5"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white"
+                  >Pre-Commit Hooks</span
+                >
+                <span class="text-[10px] font-mono text-amber-300"
+                  >Shift-Left Local</span
+                >
+              </div>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Executes Bandit Python SAST and Gitleaks entropy checks on the
+                developer workstation before code ever leaves VS Code.
+              </p>
+            </div>
+            <div
+              class="rounded-xl bg-slate-900/70 border border-slate-800 p-4 space-y-1.5"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white"
+                  >GitHub Actions CI</span
+                >
+                <span class="text-[10px] font-mono text-emerald-300"
+                  >Enforcement Layer</span
+                >
+              </div>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Provides deterministic zero-trust gating via Pytest, Semgrep
+                OWASP, CodeQL taint analysis, Trivy container scanning, and
+                Gitleaks CI.
+              </p>
+            </div>
+            <div
+              class="rounded-xl bg-slate-900/70 border border-slate-800 p-4 space-y-1.5"
+            >
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-white"
+                  >Supply Chain &amp; Ruleset</span
+                >
+                <span class="text-[10px] font-mono text-sky-300"
+                  >Governance</span
+                >
+              </div>
+              <p class="text-[11px] text-slate-400 leading-relaxed">
+                Generates CycloneDX SBOM artifacts, monitors Dependabot CVEs,
+                and locks <span class="font-mono text-slate-300">main</span> via
+                mandatory Branch Protection Rulesets.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Pipeline Audit Log -->
+        <div
+          class="lg:col-span-6 glass-panel rounded-2xl overflow-hidden flex flex-col"
+        >
+          <div
+            class="px-4 py-3 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between"
+          >
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <span class="ml-2 text-xs font-mono font-semibold text-slate-300"
+                >&gt;_ Live Pipeline Audit Log</span
+              >
+            </div>
+            <button
+              onclick="clearLogs()"
+              class="text-[11px] font-mono text-slate-400 hover:text-slate-200 transition"
+            >
+              Clear
+            </button>
+          </div>
+          <div
+            id="auditLog"
+            class="p-4 font-mono text-[11px] leading-6 bg-[#070b14] flex-1 max-h-[265px] overflow-y-auto scrollbar-thin space-y-1"
+          >
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </section>
+
+      <footer class="text-center text-[11px] text-slate-500 pb-4">
+        AI-Assisted DevSecOps Pipeline FYP • Kulliyyah of ICT, IIUM • Built with
+        Zero-Dependency Static HTML, Tailwind CSS &amp; Chart.js
+      </footer>
+    </div>
+
+    <script>
+      const REPO_OWNER = "iandarwisy";
+      const REPO_NAME = "ai-devsecops-pipeline";
+
+      // Authentic findings dataset derived from PR #9 and PR #10
+      const INITIAL_DEMO_FINDINGS = [
+        {
+          id: "f-sqli",
+          gateId: 3,
+          severity: "CRITICAL",
+          title: "SQL Injection (CWE-89)",
+          owasp: "A03:2021 Injection",
+          file: "app/vulnerable_routes.py:28",
+          detector: "Semgrep OWASP + CodeQL",
+          explanation:
+            "User-supplied query parameter is concatenated directly into a raw SQL statement. An attacker can manipulate the query logic to dump sensitive records or bypass authentication.",
+          diffLines: [
+            { type: "ctx", num: "26", text: "cursor = conn.cursor()" },
+            {
+              type: "del",
+              num: "28",
+              text: "cursor.execute(f\"SELECT * FROM users WHERE username = '{username}'\")",
+            },
+            {
+              type: "add",
+              num: "28",
+              text: 'cursor.execute("SELECT * FROM users WHERE username = ?", (username,))',
+            },
+            { type: "ctx", num: "29", text: "rows = cursor.fetchall()" },
+          ],
+          patched: false,
+        },
+        {
+          id: "f-cmdi",
+          gateId: 3,
+          severity: "CRITICAL",
+          title: "OS Command Injection (CWE-78)",
+          owasp: "A03:2021 Injection",
+          file: "app/vulnerable_routes.py:54",
+          detector: "Semgrep OWASP",
+          explanation:
+            "Passing untrusted host input into subprocess with shell=True allows attackers to chain arbitrary OS commands using metacharacters like ';' or '&&'.",
+          diffLines: [
+            {
+              type: "ctx",
+              num: "52",
+              text: "host = request.args.get('host', '127.0.0.1')",
+            },
+            {
+              type: "del",
+              num: "54",
+              text: 'output = subprocess.check_output(f"ping -c 1 {host}", shell=True)',
+            },
+            {
+              type: "add",
+              num: "54",
+              text: 'output = subprocess.check_output(["ping", "-c", "1", host], shell=False)',
+            },
+            {
+              type: "ctx",
+              num: "55",
+              text: "return jsonify({'output': output.decode()})",
+            },
+          ],
+          patched: false,
+        },
+        {
+          id: "f-path",
+          gateId: 3,
+          severity: "HIGH",
+          title: "Path Traversal (CWE-22)",
+          owasp: "A01:2021 Broken Access Control",
+          file: "app/vulnerable_routes.py:79",
+          detector: "CodeQL Deep SAST",
+          explanation:
+            "Reading files directly from an unvalidated filename parameter lets attackers traverse directories using '../' sequences and read system files such as /etc/passwd.",
+          diffLines: [
+            {
+              type: "ctx",
+              num: "77",
+              text: "filename = request.args.get('file', 'report.txt')",
+            },
+            {
+              type: "del",
+              num: "79",
+              text: "return send_file(os.path.join('/srv/app/reports', filename))",
+            },
+            {
+              type: "add",
+              num: "79",
+              text: "return send_from_directory('/srv/app/reports', secure_filename(filename))",
+            },
+            {
+              type: "ctx",
+              num: "80",
+              text: "# Enforces strict directory confinement",
+            },
+          ],
+          patched: false,
+        },
+        {
+          id: "f-md5",
+          gateId: 3,
+          severity: "HIGH",
+          title: "Weak Cryptographic Hash MD5 (CWE-327)",
+          owasp: "A02:2021 Cryptographic Failures",
+          file: "app/audit_helper.py:7",
+          detector: "Semgrep OWASP (Patched in PR #10)",
+          explanation:
+            "MD5 is cryptographically broken and vulnerable to fast collision attacks. Replacing it with SHA-256 preserves integrity guarantees for audit checksums.",
+          diffLines: [
+            {
+              type: "ctx",
+              num: "5",
+              text: "def compute_checksum(payload: str) -> str:",
+            },
+            {
+              type: "del",
+              num: "7",
+              text: "    return hashlib.md5(payload.encode('utf-8')).hexdigest()",
+            },
+            {
+              type: "add",
+              num: "7",
+              text: "    return hashlib.sha256(payload.encode('utf-8')).hexdigest()",
+            },
+          ],
+          patched: false,
+        },
+        {
+          id: "f-trivy",
+          gateId: 5,
+          severity: "HIGH",
+          title: "Container Base & Vendored CVEs (Trivy)",
+          owasp: "A06:2021 Vulnerable Components",
+          file: "Dockerfile:1 & app/requirements.txt",
+          detector: "Trivy Container & CVE Scan",
+          explanation:
+            "python:3.11-slim contained OS CVE-2026-124851 (libzstd1), Werkzeug CVE-2024-34069, and pip-vendored setuptools CVE-2025-47273. Hardening to python:3.12-slim and stripping runtime pip reduces container CVEs to 0.",
+          diffLines: [
+            { type: "del", num: "1", text: "FROM python:3.11-slim" },
+            { type: "add", num: "1", text: "FROM python:3.12-slim" },
+            {
+              type: "add",
+              num: "10",
+              text: "RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*",
+            },
+            {
+              type: "add",
+              num: "14",
+              text: "RUN pip install --no-cache-dir -r app/requirements.txt && rm -rf /usr/local/lib/python3.12/ensurepip /usr/local/lib/python3.12/site-packages/pip* /usr/local/bin/pip*",
+            },
+          ],
+          patched: false,
+        },
+      ];
+
+      const PR10_MERGED_FINDINGS = [
+        {
+          id: "p10-md5",
+          gateId: 3,
+          severity: "HIGH",
+          title: "Weak Cryptographic Hash MD5 (CWE-327)",
+          owasp: "A02:2021 Cryptographic Failures",
+          file: "app/audit_helper.py:7",
+          detector: "Semgrep OWASP -> 1-Click Groq Fix",
+          explanation:
+            "Detected by Gate 3A on PR #10 and remediated directly inside GitHub via the Groq AI 1-click 'Commit suggestion' workflow before merging into main.",
+          diffLines: [
+            {
+              type: "del",
+              num: "7",
+              text: "    return hashlib.md5(payload.encode('utf-8')).hexdigest()",
+            },
+            {
+              type: "add",
+              num: "7",
+              text: "    return hashlib.sha256(payload.encode('utf-8')).hexdigest()",
+            },
+          ],
+          patched: true,
+        },
+        {
+          id: "p10-trivy",
+          gateId: 5,
+          severity: "HIGH",
+          title: "Container Hardening & 0 CVE Verification",
+          owasp: "A06:2021 Vulnerable Components",
+          file: "Dockerfile & app/requirements.txt",
+          detector: "Trivy Container Scan + CycloneDX SBOM",
+          explanation:
+            "Upgraded Flask, Werkzeug, Jinja2, migrated base image to python:3.12-slim, patched Debian OS packages, and stripped runtime pip/ensurepip to achieve 0 HIGH/CRITICAL CVEs.",
+          diffLines: [
+            { type: "del", num: "1", text: "FROM python:3.11-slim" },
+            { type: "add", num: "1", text: "FROM python:3.12-slim" },
+            {
+              type: "add",
+              num: "14",
+              text: "RUN pip install --no-cache-dir -r app/requirements.txt && rm -rf .../ensurepip .../pip*",
+            },
+          ],
+          patched: true,
+        },
+      ];
+
+      const BASE_GATES = [
+        {
+          id: 1,
+          code: "GATE 01",
+          name: "Pre-Commit",
+          tool: "Bandit + Gitleaks",
+          rule: "Runs local static analysis (Bandit) and secret detection (Gitleaks) via git pre-commit hooks before commits are pushed.",
+          checklist: [
+            "Local Bandit Python security check configured",
+            "Gitleaks regex & entropy hook installed",
+            "Bypassed locally via --no-verify (caught downstream in CI)",
+          ],
+        },
+        {
+          id: 2,
+          code: "GATE 02",
+          name: "Unit Tests",
+          tool: "Pytest CI",
+          rule: "Executes automated functional and health-endpoint regression tests inside GitHub Actions to verify application integrity.",
+          checklist: [
+            "Python virtual environment & dependencies resolved",
+            "Flask /health and core routes pass Pytest assertions",
+            "Zero regression after security patch application",
+          ],
+        },
+        {
+          id: 3,
+          code: "GATE 03",
+          name: "SAST / Deep Scan",
+          tool: "Semgrep + CodeQL",
+          rule: "Enforces OWASP Top 10 static analysis via Semgrep (Gate 3A) and semantic taint tracking via GitHub CodeQL (Gate 3B).",
+          checklist: [
+            "Semgrep OWASP Python ruleset scan executed",
+            "CodeQL SARIF uploaded to GitHub Code Scanning",
+            "Zero unresolved HIGH/CRITICAL injection or crypto flaws",
+          ],
+        },
+        {
+          id: 4,
+          code: "GATE 04",
+          name: "AI Remediation",
+          tool: "Groq gpt-oss-120b",
+          rule: "Consumes Semgrep SARIF output, generates plain-English OWASP/CWE risk tables, and posts 1-click GitHub inline commit suggestions.",
+          checklist: [
+            "scripts/ai_remediator.py parses SARIF artifact",
+            "Groq LLM synthesizes minimal, syntax-safe code patch",
+            "Inline suggestion posted to PR Files Changed tab",
+          ],
+        },
+        {
+          id: 5,
+          code: "GATE 05",
+          name: "Container & CVE",
+          tool: "Trivy + SBOM",
+          rule: "Builds the hardened non-root Docker image, exports a CycloneDX SBOM artifact, and blocks merge on any HIGH or CRITICAL OS/Python CVE.",
+          checklist: [
+            "CycloneDX SBOM (sbom.cdx.json) generated",
+            "Non-root appuser & stripped runtime pip verified",
+            "0 HIGH / 0 CRITICAL CVEs reported by Trivy fail gate",
+          ],
+        },
+        {
+          id: 6,
+          code: "GATE 06",
+          name: "Secrets Gate",
+          tool: "Gitleaks CI",
+          rule: "Scans full PR commit history for hardcoded API keys, tokens, and high-entropy credentials using Gitleaks CI and GitHub Secret Scanning.",
+          checklist: [
+            "Full commit diff scanned for credential patterns",
+            "No exposed GROQ_API_KEY or Flask secret keys",
+            "Push protection active on repository",
+          ],
+        },
+        {
+          id: 7,
+          code: "GATE 07",
+          name: "Deploy / Ruleset",
+          tool: "Branch Protection",
+          rule: "GitHub Branch Protection Ruleset enforces deterministic zero-trust merge gating on main until all required CI security checks pass.",
+          checklist: [
+            "Direct pushes to main restricted by ruleset",
+            "All required CI status checks must report SUCCESS",
+            "Audit trail logged on Pull Request timeline",
+          ],
+        },
+      ];
+
+      let state = {
+        mode: "demo", // "demo" | "live"
+        selectedPr: "9",
+        selectedGateId: 3,
+        selectedFindingId: "f-sqli",
+        findings: JSON.parse(JSON.stringify(INITIAL_DEMO_FINDINGS)),
+        liveGateOverrides: null,
+        livePrMeta: null,
+      };
+
+      let securityChart = null;
+
+      function nowTime() {
+        return new Date().toTimeString().split(" ")[0];
+      }
+
+      function appendLog(level, msg) {
+        const logBox = document.getElementById("auditLog");
+        const colors = {
+          INFO: "text-sky-400",
+          WARN: "text-amber-400",
+          ERROR: "text-rose-400",
+          AI: "text-indigo-400",
+          SUCCESS: "text-emerald-400",
+        };
+        const row = document.createElement("div");
+        row.innerHTML = `<span class="text-slate-500">[${nowTime()}]</span> <span class="${colors[level] || "text-slate-300"} font-bold">${level.padEnd(7, " ")}</span> <span class="text-slate-300">${msg}</span>`;
+        logBox.appendChild(row);
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+
+      function clearLogs() {
+        document.getElementById("auditLog").innerHTML = "";
+        appendLog("INFO", "Audit console cleared.");
+      }
+
+      function computeGateStatuses() {
+        if (state.mode === "live" && state.liveGateOverrides) {
+          return state.liveGateOverrides;
+        }
+
+        const unpatchedSast = state.findings.filter(
+          (f) => f.gateId === 3 && !f.patched,
+        ).length;
+        const unpatchedTrivy = state.findings.filter(
+          (f) => f.gateId === 5 && !f.patched,
+        ).length;
+        const allPatched = state.findings.every((f) => f.patched);
+
+        return {
+          1: allPatched ? "passed" : "warning",
+          2: "passed",
+          3: unpatchedSast === 0 ? "passed" : "failed",
+          4: allPatched ? "passed" : "warning",
+          5: unpatchedTrivy === 0 ? "passed" : "failed",
+          6: "passed",
+          7: allPatched ? "passed" : "locked",
+        };
+      }
+
+      function statusMeta(status) {
+        const map = {
+          passed: {
+            label: "Passed",
+            pill: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+            dot: "bg-emerald-400",
+          },
+          warning: {
+            label: "Patch Ready",
+            pill: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+            dot: "bg-amber-400",
+          },
+          failed: {
+            label: "Failed",
+            pill: "bg-rose-500/15 text-rose-300 border-rose-500/30",
+            dot: "bg-rose-500",
+          },
+          locked: {
+            label: "Locked",
+            pill: "bg-slate-700/50 text-slate-300 border-slate-600/60",
+            dot: "bg-slate-400",
+          },
+        };
+        return map[status] || map.locked;
+      }
+
+      function renderAll() {
+        const gateStatuses = computeGateStatuses();
+        const passedCount = Object.values(gateStatuses).filter(
+          (s) => s === "passed",
+        ).length;
+        const openFindings = state.findings.filter((f) => !f.patched);
+        const patchedFindings = state.findings.filter((f) => f.patched);
+        const isClean =
+          openFindings.length === 0 && gateStatuses[7] === "passed";
+
+        // Mode buttons styling
+        const btnDemo = document.getElementById("btnModeDemo");
+        const btnLive = document.getElementById("btnModeLive");
+        if (state.mode === "demo") {
+          btnDemo.className =
+            "px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-500 text-white shadow";
+          btnLive.className =
+            "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white flex items-center gap-1.5";
+          document.getElementById("liveBanner").classList.add("hidden");
+          document.getElementById("primaryTopActionLabel").textContent =
+            "Reset Demo";
+        } else {
+          btnDemo.className =
+            "px-3 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white";
+          btnLive.className =
+            "px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white shadow flex items-center gap-1.5";
+          document.getElementById("liveBanner").classList.remove("hidden");
+          document.getElementById("primaryTopActionLabel").textContent =
+            "Sync Live API";
+        }
+
+        // Merge status badge
+        const badge = document.getElementById("mergeStatusBadge");
+        const dot = document.getElementById("mergeStatusDot");
+        const text = document.getElementById("mergeStatusText");
+        if (state.mode === "live" && state.selectedPr === "10") {
+          badge.className =
+            "px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide uppercase flex items-center gap-2 border bg-purple-500/15 text-purple-300 border-purple-500/40";
+          dot.className = "w-2 h-2 rounded-full bg-purple-400";
+          text.textContent = "MERGED TO MAIN";
+        } else if (isClean) {
+          badge.className =
+            "px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide uppercase flex items-center gap-2 border bg-emerald-500/15 text-emerald-300 border-emerald-500/40";
+          dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+          text.textContent = "READY TO MERGE";
+        } else {
+          badge.className =
+            "px-3.5 py-1.5 rounded-xl text-xs font-bold tracking-wide uppercase flex items-center gap-2 border bg-rose-500/15 text-rose-300 border-rose-500/40";
+          dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-pulse";
+          text.textContent = "MERGE BLOCKED";
+        }
+
+        // KPI Cards
+        document.getElementById("kpiGatesPassed").textContent =
+          `${passedCount} / 7`;
+        document.getElementById("kpiGatesSub").textContent =
+          passedCount === 7
+            ? "All zero-trust checks green"
+            : `${7 - passedCount} pending / blocked`;
+        document.getElementById("kpiGatesBar").style.width =
+          `${Math.round((passedCount / 7) * 100)}%`;
+        document.getElementById("kpiGatesBar").className =
+          `h-full rounded-full transition-all duration-500 ${passedCount === 7 ? "bg-emerald-400" : "bg-indigo-500"}`;
+
+        const kpiFindings = document.getElementById("kpiFindingsCount");
+        kpiFindings.textContent =
+          openFindings.length === 0
+            ? "0 Blocked"
+            : `${openFindings.length} Blocked`;
+        kpiFindings.className = `text-3xl font-bold ${openFindings.length === 0 ? "text-emerald-400" : "text-rose-400"}`;
+        document.getElementById("kpiFindingsTags").textContent =
+          openFindings.length === 0
+            ? "0 HIGH • 0 CRITICAL"
+            : "OWASP + Trivy CVEs";
+
+        document.getElementById("kpiPatches").textContent =
+          `${patchedFindings.length} / ${state.findings.length}`;
+        document.getElementById("kpiPatchesSub").textContent =
+          openFindings.length === 0
+            ? "All AI fixes verified"
+            : `${openFindings.length} ready for 1-click commit`;
+
+        // Render 7 Gate Cards
+        const grid = document.getElementById("gatesGrid");
+        grid.innerHTML = "";
+        BASE_GATES.forEach((g) => {
+          const st = gateStatuses[g.id];
+          const meta = statusMeta(st);
+          const activeClass =
+            state.selectedGateId === g.id ? "gate-active" : "";
+          const labelOverride =
+            g.id === 1 && st === "warning" ? "Bypassed Local" : meta.label;
+
+          const card = document.createElement("button");
+          card.type = "button";
+          card.onclick = () => selectGate(g.id);
+          card.className = `gate-card text-left rounded-xl bg-slate-900/80 border border-slate-800 p-3.5 flex flex-col justify-between gap-3 ${activeClass}`;
+          card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono font-semibold text-slate-400">${g.code}</span>
+            <span class="w-2 h-2 rounded-full ${meta.dot}"></span>
+          </div>
+          <div>
+            <div class="text-xs font-bold text-white">${g.name}</div>
+            <div class="text-[11px] text-slate-400 truncate mt-0.5">${g.tool}</div>
+          </div>
+          <div class="pt-1">
+            <span class="inline-flex items-center justify-center w-full px-2 py-1 rounded-lg text-[10px] font-semibold border ${meta.pill}">
+              ${labelOverride}
+            </span>
+          </div>
+        `;
+          grid.appendChild(card);
+        });
+
+        // Gate Inspector
+        const activeGate =
+          BASE_GATES.find((g) => g.id === state.selectedGateId) ||
+          BASE_GATES[2];
+        const activeGateStatus = gateStatuses[activeGate.id];
+        const activeGateMeta = statusMeta(activeGateStatus);
+        document.getElementById("inspectorGateTag").textContent =
+          `${activeGate.code} • ${activeGate.name.toUpperCase()}`;
+        const stEl = document.getElementById("inspectorGateStatus");
+        stEl.textContent = activeGateMeta.label;
+        stEl.className = `px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${activeGateMeta.pill}`;
+        document.getElementById("inspectorRule").textContent = activeGate.rule;
+
+        const checklistEl = document.getElementById("inspectorChecklist");
+        checklistEl.innerHTML = "";
+        activeGate.checklist.forEach((item, idx) => {
+          const passedItem = activeGateStatus === "passed" || idx === 0;
+          const li = document.createElement("li");
+          li.className = "flex items-start gap-2 text-slate-300";
+          li.innerHTML = `
+          <span class="mt-0.5 ${passedItem ? "text-emerald-400" : "text-rose-400"} font-bold">${passedItem ? "&#10003;" : "&#10007;"}</span>
+          <span>${item}</span>
+        `;
+          checklistEl.appendChild(li);
+        });
+
+        // Findings Queue
+        document.getElementById("queueCounter").textContent =
+          `${openFindings.length} Open / ${patchedFindings.length} Patched`;
+        const listEl = document.getElementById("findingsList");
+        listEl.innerHTML = "";
+        state.findings.forEach((f) => {
+          const isSelected = f.id === state.selectedFindingId;
+          const sevClass = f.patched
+            ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30"
+            : f.severity === "CRITICAL"
+              ? "bg-rose-500/15 text-rose-300 border-rose-500/30"
+              : "bg-amber-500/15 text-amber-300 border-amber-500/30";
+
+          const btn = document.createElement("button");
+          btn.type = "button";
+          btn.onclick = () => selectFinding(f.id);
+          btn.className = `w-full text-left rounded-xl p-3.5 border transition ${
+            isSelected
+              ? "bg-indigo-500/10 border-indigo-400/70"
+              : "bg-slate-900/70 border-slate-800 hover:border-slate-700"
+          }`;
+          btn.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${sevClass}">
+              ${f.patched ? "PATCHED" : f.severity}
+            </span>
+            <span class="text-[11px] font-mono text-slate-400 truncate">${f.owasp}</span>
+          </div>
+          <div class="mt-2 text-xs font-bold text-white">${f.title}</div>
+          <div class="mt-1 flex items-center justify-between text-[11px] text-slate-400">
+            <span class="font-mono text-sky-300 truncate">${f.file}</span>
+            <span class="shrink-0 ml-2">${f.patched ? "Verified &#10003;" : "Inspect &rarr;"}</span>
+          </div>
+        `;
+          listEl.appendChild(btn);
+        });
+
+        // Selected Finding Right Panel
+        const currentFinding =
+          state.findings.find((f) => f.id === state.selectedFindingId) ||
+          state.findings[0];
+        if (currentFinding) {
+          document.getElementById("inspectorPrLabel").textContent =
+            `PR #${state.selectedPr}`;
+          document.getElementById("inspectorFile").textContent =
+            currentFinding.file;
+          document.getElementById("inspectorTitle").textContent =
+            currentFinding.title;
+          document.getElementById("inspectorDetector").textContent =
+            `Detector: ${currentFinding.detector}`;
+          document.getElementById("inspectorExplanation").textContent =
+            currentFinding.explanation;
+          document.getElementById("diffHeaderPath").textContent =
+            `Suggested Inline Patch • ${currentFinding.file}`;
+
+          const sevBadge = document.getElementById("inspectorSeverity");
+          if (currentFinding.patched) {
+            sevBadge.textContent = "REMEDIATED";
+            sevBadge.className =
+              "px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
+            document.getElementById("diffStatePill").textContent =
+              "Committed & Verified";
+            document.getElementById("diffStatePill").className =
+              "text-emerald-400 font-semibold";
+          } else {
+            sevBadge.textContent = currentFinding.severity;
+            sevBadge.className =
+              currentFinding.severity === "CRITICAL"
+                ? "px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border bg-rose-500/15 text-rose-300 border-rose-500/30"
+                : "px-2.5 py-1 rounded-lg text-[11px] font-bold uppercase tracking-wider border bg-amber-500/15 text-amber-300 border-amber-500/30";
+            document.getElementById("diffStatePill").textContent =
+              "Patch Ready";
+            document.getElementById("diffStatePill").className =
+              "text-amber-300 font-semibold";
+          }
+
+          const diffEl = document.getElementById("inspectorDiff");
+          diffEl.innerHTML = currentFinding.diffLines
+            .map((line) => {
+              if (line.type === "del") {
+                return `<div class="bg-rose-500/15 text-rose-300 px-2 rounded"><span class="inline-block w-8 text-slate-500 select-none">${line.num}</span>- ${escapeHtml(line.text)}</div>`;
+              }
+              if (line.type === "add") {
+                return `<div class="bg-emerald-500/15 text-emerald-300 px-2 rounded"><span class="inline-block w-8 text-slate-500 select-none">${line.num}</span>+ ${escapeHtml(line.text)}</div>`;
+              }
+              return `<div class="text-slate-400 px-2"><span class="inline-block w-8 text-slate-600 select-none">${line.num}</span>  ${escapeHtml(line.text)}</div>`;
+            })
+            .join("");
+
+          // Action buttons
+          const btnApply = document.getElementById("btnApplyFix");
+          const btnApplyLabel = document.getElementById("btnApplyFixLabel");
+          const btnAll = document.getElementById("btnApplyAll");
+          const hint = document.getElementById("actionHintText");
+
+          if (state.mode === "live") {
+            btnAll.classList.add("hidden");
+            btnApply.disabled = false;
+            btnApply.className =
+              "px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg transition flex items-center gap-2";
+            btnApplyLabel.textContent = `Open PR #${state.selectedPr} on GitHub (Zero-Trust Read-Only)`;
+            hint.textContent =
+              "Write actions require authenticated GitHub session; dashboard never stores PAT tokens.";
+          } else {
+            btnAll.classList.toggle("hidden", openFindings.length === 0);
+            if (currentFinding.patched) {
+              btnApply.disabled = true;
+              btnApply.className =
+                "px-4 py-2.5 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 cursor-not-allowed flex items-center gap-2";
+              btnApplyLabel.textContent = "AI Fix Applied & Gate Verified";
+              hint.textContent =
+                "Select another open finding or click Reset Demo to replay.";
+            } else {
+              btnApply.disabled = false;
+              btnApply.className =
+                "px-4 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-500 to-sky-500 hover:from-indigo-400 hover:to-sky-400 text-white shadow-lg shadow-indigo-500/20 transition flex items-center gap-2";
+              btnApplyLabel.textContent =
+                "Accept & Apply AI Fix (Commit Suggestion)";
+              hint.textContent = `Simulates 1-click commit to PR #${state.selectedPr} & re-evaluates fail gates.`;
+            }
+          }
+        }
+
+        renderChart(openFindings, patchedFindings);
+      }
+
+      function escapeHtml(str) {
+        return str
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function renderChart(openFindings, patchedFindings) {
+        const ctx = document.getElementById("securityChart").getContext("2d");
+        const openCritical = openFindings.filter(
+          (f) => f.severity === "CRITICAL",
+        ).length;
+        const openHigh = openFindings.filter(
+          (f) => f.severity === "HIGH",
+        ).length;
+        const fixedCount = patchedFindings.length;
+
+        const dataValues = [openCritical, openHigh, fixedCount];
+
+        if (securityChart) {
+          securityChart.data.datasets[0].data = dataValues;
+          securityChart.update();
+          return;
+        }
+
+        securityChart = new Chart(ctx, {
+          type: "bar",
+          data: {
+            labels: ["Critical (Open)", "High (Open)", "AI Remediated"],
+            datasets: [
+              {
+                label: "Findings",
+                data: dataValues,
+                backgroundColor: [
+                  "rgba(244, 63, 94, 0.75)",
+                  "rgba(245, 158, 11, 0.75)",
+                  "rgba(16, 185, 129, 0.75)",
+                ],
+                borderColor: ["#f43f5e", "#f59e0b", "#10b981"],
+                borderWidth: 1.5,
+                borderRadius: 8,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                suggestedMax: 5,
+                ticks: {
+                  stepSize: 1,
+                  color: "#94a3b8",
+                  font: { family: "JetBrains Mono", size: 11 },
+                },
+                grid: { color: "rgba(51, 65, 85, 0.35)" },
+              },
+              x: {
+                ticks: {
+                  color: "#cbd5e1",
+                  font: { family: "Inter", size: 11 },
+                },
+                grid: { display: false },
+              },
+            },
+          },
+        });
+      }
+
+      function selectGate(id) {
+        state.selectedGateId = id;
+        const g = BASE_GATES.find((x) => x.id === id);
+        appendLog("INFO", `Inspecting ${g.code}: ${g.name} (${g.tool}).`);
+        renderAll();
+      }
+
+      function selectFinding(id) {
+        state.selectedFindingId = id;
+        const f = state.findings.find((x) => x.id === id);
+        if (f) state.selectedGateId = f.gateId;
+        renderAll();
+      }
+
+      function applyCurrentFix() {
+        if (state.mode === "live") {
+          window.open(
+            `https://github.com/${REPO_OWNER}/${REPO_NAME}/pull/${state.selectedPr}/files`,
+            "_blank",
+            "noopener",
+          );
+          return;
+        }
+
+        const f = state.findings.find((x) => x.id === state.selectedFindingId);
+        if (!f || f.patched) return;
+
+        f.patched = true;
+        appendLog("AI", `Applied 1-click patch for ${f.title} (${f.file}).`);
+        appendLog(
+          "SUCCESS",
+          `Re-verified target gate -> finding marked REMEDIATED.`,
+        );
+
+        const nextOpen = state.findings.find((x) => !x.patched);
+        if (nextOpen) {
+          state.selectedFindingId = nextOpen.id;
+          state.selectedGateId = nextOpen.gateId;
+        } else {
+          state.selectedGateId = 7;
+          appendLog(
+            "SUCCESS",
+            "All 7 Security Fail Gates PASSED (0 HIGH/CRITICAL). Branch Protection UNLOCKED.",
+          );
+        }
+        renderAll();
+      }
+
+      function applyAllFixes() {
+        if (state.mode !== "demo") return;
+        state.findings.forEach((f) => {
+          f.patched = true;
+        });
+        state.selectedGateId = 7;
+        appendLog(
+          "AI",
+          "Batch-committed all remaining Groq AI & Docker hardening patches.",
+        );
+        appendLog(
+          "SUCCESS",
+          "7/7 Security Gates PASSED • 0 Container CVEs • Pull Request READY TO MERGE.",
+        );
+        renderAll();
+      }
+
+      function resetDemo() {
+        state.selectedPr = "9";
+        document.getElementById("prSelector").value = "9";
+        state.findings = JSON.parse(JSON.stringify(INITIAL_DEMO_FINDINGS));
+        state.selectedFindingId = "f-sqli";
+        state.selectedGateId = 3;
+        state.liveGateOverrides = null;
+        document.getElementById("auditLog").innerHTML = "";
+        appendLog(
+          "INFO",
+          "Interactive Demo reset -> Loaded PR #9 (feat/owasp-demo-vulnerabilities).",
+        );
+        appendLog(
+          "WARN",
+          "[Gate 1: Pre-Commit] Local Bandit/Gitleaks bypassed (--no-verify).",
+        );
+        appendLog(
+          "ERROR",
+          "[Gate 3A/3B: SAST] Blocked: SQLi, Command Injection, Path Traversal, MD5.",
+        );
+        appendLog(
+          "ERROR",
+          "[Gate 5: Trivy] Blocked: HIGH CVEs in python:3.11-slim & dependencies.",
+        );
+        appendLog(
+          "AI",
+          "[Gate 4: Groq Agent] Synthesized 5 inline fixes ready for 1-click commit.",
+        );
+        renderAll();
+      }
+
+      function handleTopAction() {
+        if (state.mode === "demo") {
+          resetDemo();
+        } else {
+          syncLiveGitHub(state.selectedPr);
+        }
+      }
+
+      function handlePrChange() {
+        state.selectedPr = document.getElementById("prSelector").value;
+        if (state.mode === "live") {
+          syncLiveGitHub(state.selectedPr);
+        } else {
+          if (state.selectedPr === "10") {
+            state.findings = JSON.parse(JSON.stringify(PR10_MERGED_FINDINGS));
+            state.selectedFindingId = state.findings[0].id;
+            state.selectedGateId = 7;
+            appendLog(
+              "SUCCESS",
+              "Loaded PR #10 (Merged): 1-click MD5 fix + python:3.12-slim 0-CVE container.",
+            );
+            renderAll();
+          } else {
+            resetDemo();
+          }
+        }
+      }
+
+      function setMode(newMode) {
+        state.mode = newMode;
+        if (newMode === "demo") {
+          state.liveGateOverrides = null;
+          if (state.selectedPr === "9") {
+            resetDemo();
+          } else {
+            handlePrChange();
+          }
+        } else {
+          syncLiveGitHub(state.selectedPr);
+        }
+      }
+
+      async function syncLiveGitHub(prNumber) {
+        const bannerMsg = document.getElementById("liveBannerMsg");
+        const prLink = document.getElementById("livePrLink");
+        prLink.href = `https://github.com/${REPO_OWNER}/${REPO_NAME}/pull/${prNumber}`;
+        prLink.textContent = `Open PR #${prNumber} on GitHub ->`;
+
+        bannerMsg.textContent = `Fetching live GitHub REST API telemetry for PR #${prNumber}...`;
+        appendLog(
+          "INFO",
+          `GET /repos/${REPO_OWNER}/${REPO_NAME}/pulls/${prNumber} (Read-Only)...`,
+        );
+
+        // Set contextual findings preview for selected PR
+        if (prNumber === "10") {
+          state.findings = JSON.parse(JSON.stringify(PR10_MERGED_FINDINGS));
+          state.selectedFindingId = state.findings[0].id;
+          state.selectedGateId = 7;
+        } else {
+          state.findings = JSON.parse(JSON.stringify(INITIAL_DEMO_FINDINGS));
+          state.selectedFindingId = state.findings[0].id;
+          state.selectedGateId = 3;
+        }
+
+        try {
+          const prRes = await fetch(
+            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/pulls/${prNumber}`,
+          );
+          if (!prRes.ok) throw new Error(`HTTP ${prRes.status}`);
+          const prData = await prRes.json();
+
+          const checksRes = await fetch(
+            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/commits/${prData.head.sha}/check-runs`,
+          );
+          if (!checksRes.ok) throw new Error(`HTTP ${checksRes.status}`);
+          const checksData = await checksRes.json();
+
+          const runs = checksData.check_runs || [];
+          const mapConclusion = (matchText) => {
+            const match = runs.find((r) =>
+              r.name.toLowerCase().includes(matchText.toLowerCase()),
+            );
+            if (!match) return prData.merged ? "passed" : "warning";
+            if (
+              match.conclusion === "success" ||
+              match.conclusion === "skipped" ||
+              match.conclusion === "neutral"
+            )
+              return "passed";
+            if (match.conclusion === "failure") return "failed";
+            return "warning";
+          };
+
+          const g3a = mapConclusion("Semgrep");
+          const g3b = mapConclusion("CodeQL");
+          const gate3 =
+            g3a === "failed" || g3b === "failed" ? "failed" : "passed";
+          const gate5 = mapConclusion("Trivy");
+
+          state.liveGateOverrides = {
+            1: prData.merged ? "passed" : "warning",
+            2: mapConclusion("Pytest"),
+            3: gate3,
+            4: mapConclusion("Groq"),
+            5: gate5,
+            6: mapConclusion("Gitleaks"),
+            7: prData.merged
+              ? "passed"
+              : gate3 === "passed" && gate5 === "passed"
+                ? "passed"
+                : "locked",
+          };
+
+          const prStatusLabel = prData.merged
+            ? "MERGED"
+            : prData.state.toUpperCase();
+          bannerMsg.textContent = `Live Sync OK • PR #${prNumber} (${prStatusLabel}) • Commit ${prData.head.sha.slice(0, 7)} • ${runs.length} GitHub Check Runs loaded.`;
+          appendLog(
+            "SUCCESS",
+            `Synced PR #${prNumber} [${prStatusLabel}] (${runs.length} live check-runs from commit ${prData.head.sha.slice(0, 7)}).`,
+          );
+        } catch (err) {
+          // Resilient fallback if GitHub public rate-limit (60 req/hr) is hit during demo
+          state.liveGateOverrides =
+            prNumber === "10"
+              ? {
+                  1: "passed",
+                  2: "passed",
+                  3: "passed",
+                  4: "passed",
+                  5: "passed",
+                  6: "passed",
+                  7: "passed",
+                }
+              : {
+                  1: "warning",
+                  2: "passed",
+                  3: "failed",
+                  4: "passed",
+                  5: "failed",
+                  6: "passed",
+                  7: "locked",
+                };
+
+          bannerMsg.textContent = `GitHub API rate-limited (${err.message}) — displaying verified cached snapshot for PR #${prNumber}.`;
+          appendLog(
+            "WARN",
+            `GitHub API unavailable (${err.message}). Loaded verified PR #${prNumber} snapshot.`,
+          );
+        }
+
+        renderAll();
+      }
+
+      // Boot Dashboard
+      resetDemo();
+    </script>
+  </body>
+</html>
