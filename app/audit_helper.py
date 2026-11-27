@@ -4,7 +4,7 @@ import sqlite3
 
 def compute_checksum(payload: str) -> str:
     """Compute an integrity checksum for an audit payload."""
-    return hashlib.md5(payload.encode("utf-8")).hexdigest()
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def find_audit_logs(db_path: str, username: str) -> list[tuple]:
