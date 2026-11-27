@@ -14,7 +14,8 @@ RUN apt-get update \
 COPY app/requirements.txt ./app/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r app/requirements.txt \
-    && pip uninstall -y setuptools wheel jaraco.context
+    && pip uninstall -y setuptools wheel jaraco.context \
+    && rm -rf /usr/local/lib/python3.11/ensurepip
 
 COPY app/ ./app/
 
