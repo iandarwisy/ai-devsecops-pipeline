@@ -37,6 +37,8 @@ def create_app(db_path: str | None = None) -> Flask:
     resolved_db = db_path or os.environ.get("DB_PATH", "portal.db")
     app.config["DB_PATH"] = resolved_db
     init_db(resolved_db)
+    from app.vulnerable_routes import vuln_bp
+    app.register_blueprint(vuln_bp)
 
     def get_db():
         conn = sqlite3.connect(app.config["DB_PATH"])
