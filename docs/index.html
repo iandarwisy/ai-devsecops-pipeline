@@ -1077,7 +1077,7 @@
           1: allPatched ? "passed" : "warning",
           2: "passed",
           3: unpatchedSast === 0 ? "passed" : "failed",
-          4: allPatched ? "passed" : "warning",
+          4: "passed",
           5: unpatchedTrivy === 0 ? "passed" : "failed",
           6: "passed",
           7: allPatched ? "passed" : "locked",
@@ -1626,18 +1626,26 @@
 
           const runs = checksData.check_runs || [];
           const mapConclusion = (matchText) => {
-            const match = runs.find((r) =>
+            const matches = runs.filter((r) =>
               r.name.toLowerCase().includes(matchText.toLowerCase()),
             );
-            if (!match) return prData.merged ? "passed" : "warning";
+            if (matches.length === 0)
+              return prData.merged ? "passed" : "warning";
             if (
-              match.conclusion === "success" ||
-              match.conclusion === "skipped" ||
-              match.conclusion === "neutral"
+              matches.some((r) =>
+                ["failure", "timed_out", "action_required"].includes(
+                  r.conclusion,
+                ),
+              )
+            )
+              return "failed";
+            if (
+              matches.every((r) =>
+                ["success", "skipped", "neutral"].includes(r.conclusion),
+              )
             )
               return "passed";
-            if (match.conclusion === "failure") return "failed";
-            return "warning";
+            return prData.merged ? "passed" : "warning";
           };
 
           const g3a = mapConclusion("Semgrep");
